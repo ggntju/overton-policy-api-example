@@ -6,38 +6,45 @@ import pandas as pd
 class OvertonApiUser:
     def __init__(self, query: str):
         load_dotenv()
-        self.api_key = os.getenv('OVERTON_API_KEY')
-        self.query = query
-        self.base_url = "https://app.overton.io/documents.php"
-        self.output_format = "json"
-        self.initialized = False
-        self.next_page_url = ""
-        self.next_page_index = 0
-        self.total_pages = 0
+        self.__api_key = os.getenv('OVERTON_API_KEY')
+        self.__query = query
+        self.__base_url = "https://app.overton.io/documents.php"
+        self.__output_format = "json"
+        self.__initialized = False
+        self.__next_page_url = ""
+        self.__next_page_index = 0
+        self.__total_pages = 0
 
     def initialRequest(self):
         payload = {
-            "api_key": self.api_key,
-            "query": self.query,
-            "format": self.output_format
+            "api_key": self.__api_key,
+            "query": self.__query,
+            "format": self.__output_format
         }
 
-        r = requests.get(self.base_url, params=payload)
-        response = r.json()
-        print("processing page 1 ...")
-        self.next_page_url, self.next_page_index = self.__process_response(response, 1, True)
-        if(self.next_page_url != "" and self.next_page_index != 0):
-            self.initialized = True
+        try:
+            r = requests.get(self.__base_url, params=payload)
+            response = r.json()
+            print("processing page 1 ...")
+            self.__next_page_url, self.__next_page_index = self.__process_response(response, 1, True)
+            if(self.__next_page_url != "" and self.__next_page_index != 0):
+                self.__initialized = True
+        except:
+            print("initial request failed")
 
     def nextRequest(self) -> bool:
-        if(self.initialized):
-            r = requests.get(self.next_page_url)
-            response = r.json()
-            print("processing page " + str(self.next_page_index) + " of " + str(self.total_pages) + "...")
-            self.next_page_url, self.next_page_index = self.__process_response(response, self.next_page_index, True)
-            if(self.next_page_url == ""):
-                return True
-            else:
+        if(self.__initialized):
+            try:
+                r = requests.get(self.__next_page_url)
+                response = r.json()
+                print("processing page " + str(self.__next_page_index) + " of " + str(self.__total_pages) + "...")
+                self.__next_page_url, self.__next_page_index = self.__process_response(response, self.__next_page_index, True)
+                if(self.__next_page_url == ""):
+                    return True
+                else:
+                    return False
+            except:
+                print("next request failed")
                 return False
         else:
             print("Not initialized")
@@ -48,7 +55,7 @@ class OvertonApiUser:
         page_df = pd.DataFrame()
         try:
             query = response["query"]
-            self.total_pages = query["pages"]
+            self.__total_pages = query["pages"]
             next_page_url = query["next_page_url"]
         except:
             message = "query not found in page index " + str(page_index)
@@ -69,5 +76,11 @@ class OvertonApiUser:
             message = "results not found in page index " + str(page_index)
             print(message)  
 
-        page_df.to_excel("page_" + str(page_index) + ".xlsx", index=False)
+        if(output_flag):
+            try:
+                page_df.to_excel("page_" + str(page_index) + ".xlsx", index=False)
+            except:
+                message = "failed to output page index " + str(page_index)
+                print(message)
+                
         return [next_page_url, page_index + 1]
