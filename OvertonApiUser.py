@@ -5,7 +5,7 @@ import pandas as pd
 import logging
 
 class OvertonApiUser:
-    def __init__(self, query: str, year: int = 0, has_references:bool = None):
+    def __init__(self, query: str, year: int = 0, has_references:int = None):
         load_dotenv()
         self.__logger = logging.getLogger(__name__)
         logging.basicConfig(filename='overton-api.log', encoding='utf-8', level=logging.WARNING)
@@ -105,11 +105,11 @@ class OvertonApiUser:
             message = "query not found in page index " + str(page_index)
             print(message)
 
-        try:
-            facets = response["facets"]
-        except:
-            message = "facets not found in page index " + str(page_index)
-            print(message)
+        # try:
+        #     facets = response["facets"]
+        # except:
+        #     message = "facets not found in page index " + str(page_index)
+        #     print(message)
 
         try:
             results = response["results"]
